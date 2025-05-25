@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class DataImporter {
@@ -51,7 +53,7 @@ public class DataImporter {
             }
 
             List<String> requiredHeaders = Arrays.asList(
-                    "开课学期", "课程代码", "课程名称", "教学班", "学分",
+                    "课程代码", "课程名称", "教学班", "学分",
                     "任课教师", "上课时间", "课程归属", "开课学院"
             );
 
@@ -75,7 +77,6 @@ public class DataImporter {
 
                 try {
                     // 3. 【核心步骤】通过列名从Map中获取索引，再获取数据
-                    String semester = getStringCellValue(row.getCell(headerMap.get("开课学期")));
                     String courseCode = getStringCellValue(row.getCell(headerMap.get("课程代码")));
                     String courseName = getStringCellValue(row.getCell(headerMap.get("课程名称")));
                     String rawClassCode = getStringCellValue(row.getCell(headerMap.get("教学班")));
@@ -84,6 +85,15 @@ public class DataImporter {
                     String timeString = getStringCellValue(row.getCell(headerMap.get("上课时间")));
                     String moduleName = getStringCellValue(row.getCell(headerMap.get("课程归属")));
                     String college = getStringCellValue(row.getCell(headerMap.get("开课学院")));
+
+                    // 【核心修正】从教学班号派生出学期 semester
+                    String semester = parseSemesterFromTeachingClassCode(rawClassCode);
+
+                    // 如果教学班号或课程代码为空，则跳过此行，因为它们是关键ID
+                    if (rawClassCode.isEmpty() || courseCode.isEmpty()) {
+                        System.err.println("警告：第 " + (i + 1) + " 行缺少关键信息（课程代码或教学班），已跳过。");
+                        continue;
+                    }
 
                     int moduleId = moduleDAO.findOrInsert(moduleName);
                     int teacherId = teacherDAO.findOrInsert(teacherName, college);
@@ -149,5 +159,17 @@ public class DataImporter {
     private String normalizeClassCode(String rawCode) {
         if (rawCode == null) return "";
         return rawCode.replaceAll("[A-Z]$", ""); // 去掉末尾的单个大写字母
+    }
+
+    private static final Pattern SEMESTER_PATTERN = Pattern.compile("^\\([^)]+\\)");
+
+    private String parseSemesterFromTeachingClassCode(String rawCode) {
+        if (rawCode == null) return "Unknown";
+        Matcher matcher = SEMESTER_PATTERN.matcher(rawCode);
+        if (matcher.find()) {
+            return matcher.group(0);
+        }
+        // TODO: 需要再想想处理逻辑
+        return "UnknownSemester";
     }
 }

@@ -1,0 +1,41 @@
+package cxz.Final_Project.model;
+
+import java.util.List;
+
+public class SchedulableCourse {
+    private String courseCode;
+    private String courseName;
+    private String moduleName;
+    private double credits;
+    private List<TimeSlot> timeSlots; // 一门课可能的所有上课时间
+
+    public SchedulableCourse(String courseCode, String courseName, String moduleName, double credits, List<TimeSlot> timeSlots) {
+        this.courseCode = courseCode;
+        this.courseName = courseName;
+        this.moduleName = moduleName;
+        this.credits = credits;
+        this.timeSlots = timeSlots;
+    }
+
+    public boolean conflictsWith(SchedulableCourse other) {
+        for (TimeSlot thisSlot : this.timeSlots) {
+            for (TimeSlot otherSlot : other.timeSlots) {
+                if (thisSlot.conflictsWith(otherSlot)) {
+                    return true; // 只要有一对时间冲突，这两门课就冲突
+                }
+            }
+        }
+        return false;
+    }
+
+    public String getCourseCode() { return courseCode; }
+    public String getCourseName() { return courseName; }
+    public String getModuleName() { return moduleName; }
+    public double getCredits() { return credits; }
+    public List<TimeSlot> getTimeSlots() { return timeSlots; }
+
+    @Override
+    public String toString() {
+        return String.format("%s (%s) - %s, %.1f学分", courseName, courseCode, moduleName, credits);
+    }
+}

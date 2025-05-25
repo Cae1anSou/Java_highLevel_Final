@@ -11,8 +11,13 @@ public class RatedSolution implements Comparable<RatedSolution> {
         this.score = score;
     }
 
-    public List<SchedulableCourse> getSolution() { return solution; }
-    public double getScore() { return score; }
+    public List<SchedulableCourse> getSolution() {
+        return solution;
+    }
+
+    public double getScore() {
+        return score;
+    }
 
     @Override
     public int compareTo(RatedSolution other) {

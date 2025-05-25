@@ -15,7 +15,7 @@ public class CourseOffering {
     }
 
     public String getCourseCode() {
-        return classCode;
+        return this.courseCode;
     }
 
     public void setCourseCode(String c) {

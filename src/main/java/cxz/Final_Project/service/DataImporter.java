@@ -1,18 +1,29 @@
 package cxz.Final_Project.service;
 
 import cxz.Final_Project.dao.*;
+import cxz.Final_Project.model.Course;
+import cxz.Final_Project.model.CourseOffering;
+import cxz.Final_Project.model.CourseTime;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-// 这是我们下一步要创建的类
+import java.io.File;
+import java.io.FileInputStream;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public class DataImporter {
 
-    // 1. 首先，把所有需要的“厨师”(DAO)都聘请过来，作为类的成员变量
     private final ModuleDAO moduleDAO;
     private final TeacherDAO teacherDAO;
     private final CourseDAO courseDAO;
     private final CourseOfferingDAO courseOfferingDAO;
     private final CourseTimeDAO courseTimeDAO;
 
-    // 构造方法，初始化所有DAO
     public DataImporter() {
         this.moduleDAO = new ModuleDAO();
         this.teacherDAO = new TeacherDAO();
@@ -21,60 +32,122 @@ public class DataImporter {
         this.courseTimeDAO = new CourseTimeDAO();
     }
 
-    // 2. 这是核心的业务方法，它就是“总厨”
     public void importFromXLSX(String filePath) {
-        // (这里是使用Apache POI读取XLSX文件的代码)
-        // ...
+        File excelFile = new File(filePath);
+        try (FileInputStream fis = new FileInputStream(excelFile);
+             Workbook workbook = new XSSFWorkbook(fis)) {
 
-        // 循环处理XLSX的每一行数据
-        for (Row row : sheet) {
+            Sheet sheet = workbook.getSheetAt(0);
 
-            // === 开始指挥所有DAO协同工作 ===
+            // 1. 【核心步骤】创建表头映射
+            Map<String, Integer> headerMap = new HashMap<>();
+            Row headerRow = sheet.getRow(0); // 获取第一行作为表头
+            if (headerRow == null) {
+                System.err.println("错误：Excel文件没有表头！");
+                return;
+            }
+            for (Cell cell : headerRow) {
+                headerMap.put(cell.getStringCellValue(), cell.getColumnIndex());
+            }
 
-            // A. 从行中读取数据
-            String moduleName = row.getCell(X).getStringCellValue();
-            String teacherName = row.getCell(Y).getStringCellValue();
-            String college = row.getCell(Z).getStringCellValue();
-            String courseCode = row.getCell(C).getStringCellValue();
-            // ...读取其他所有需要的数据...
-            String rawTeachingClassCode = row.getCell(T).getStringCellValue(); // e.g., ...-01A
+            List<String> requiredHeaders = Arrays.asList(
+                    "开课学期", "课程代码", "课程名称", "教学班", "学分",
+                    "任课教师", "上课时间", "课程归属", "开课学院"
+            );
 
-            // B. 调用 ModuleDAO
-            int moduleId = moduleDAO.findOrInsertModule(moduleName);
+            // 使用Java Stream API来找出所有缺失的表头
+            List<String> missingHeaders = requiredHeaders.stream()
+                    .filter(header -> !headerMap.containsKey(header))
+                    .collect(Collectors.toList());
 
-            // C. 调用 TeacherDAO
-            int teacherId = teacherDAO.findOrInsertTeacher(teacherName, college);
+            if (!missingHeaders.isEmpty()) {
+                // 如果有缺失的，一次性全部报告出来
+                System.err.println("错误：Excel文件格式不正确，缺少以下必需的列： " + String.join(", ", missingHeaders));
+                return; // 直接返回，不再继续执行
+            }
 
-            // D. 准备 Course "食材" (Model)
-            Course course = new Course();
-            course.setCourseCode(courseCode);
-            course.setName(...);
-            course.setCredits(...);
-            course.setModuleId(moduleId);
-            // 调用 CourseDAO
-            courseDAO.insertIfNotExist(course);
+            System.out.println("表头校验通过，开始处理数据...");
 
-            // E. 处理教学班号，得到基础班号
-            String baseTeachingClassCode = normalize(rawTeachingClassCode); // e.g., ...-01
+            // 2. 循环处理数据行
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
 
-            // F. 准备 CourseOffering "食材" (Model)
-            CourseOffering offering = new CourseOffering();
-            offering.setTeachingClassCode(baseTeachingClassCode);
-            offering.setCourseCode(courseCode);
-            offering.setTeacherId(teacherId);
-            offering.setSemester(...);
-            // 调用 CourseOfferingDAO
-            courseOfferingDAO.insertIfNotExist(offering);
+                try {
+                    // 3. 【核心步骤】通过列名从Map中获取索引，再获取数据
+                    String semester = getStringCellValue(row.getCell(headerMap.get("开课学期")));
+                    String courseCode = getStringCellValue(row.getCell(headerMap.get("课程代码")));
+                    String courseName = getStringCellValue(row.getCell(headerMap.get("课程名称")));
+                    String rawClassCode = getStringCellValue(row.getCell(headerMap.get("教学班")));
+                    double credits = getNumericCellValue(row.getCell(headerMap.get("学分")));
+                    String teacherName = getStringCellValue(row.getCell(headerMap.get("任课教师")));
+                    String timeString = getStringCellValue(row.getCell(headerMap.get("上课时间")));
+                    String moduleName = getStringCellValue(row.getCell(headerMap.get("课程归属")));
+                    String college = getStringCellValue(row.getCell(headerMap.get("开课学院")));
 
-            // G. 准备 CourseTime "食材" (Model)
-            CourseTime time = new CourseTime();
-            time.setTeachingClassCode(baseTeachingClassCode);
-            time.setTimeString(...);
-            time.setTimeType(...);
-            // 调用 CourseTimeDAO
-            courseTimeDAO.insert(time);
+                    int moduleId = moduleDAO.findOrInsert(moduleName);
+                    int teacherId = teacherDAO.findOrInsert(teacherName, college);
 
-            System.out.println("成功处理一行数据: " + course.getName());
+                    Course course = new Course();
+                    course.setCode(courseCode);
+                    course.setName(courseName);
+                    course.setCredits(credits);
+                    course.setModuleId(moduleId);
+                    courseDAO.insertIfNotExist(course);
+
+                    String baseClassCode = normalizeClassCode(rawClassCode);
+
+                    CourseOffering offering = new CourseOffering();
+                    offering.setClassCode(baseClassCode);
+                    offering.setCourseCode(courseCode);
+                    offering.setTeacherId(teacherId);
+                    offering.setSemester(semester);
+                    courseOfferingDAO.insertIfNotExist(offering);
+
+                    CourseTime time = new CourseTime();
+                    time.setClassCode(baseClassCode);
+                    time.setTimeString(timeString);
+                    time.setTimeType("讲课学时");
+                    courseTimeDAO.insert(time);
+
+                    System.out.printf("成功处理课程: %s, 授课老师：%s%n", courseName, teacherName);
+
+                } catch (Exception e) {
+                    System.err.println("处理第 " + (i + 1) + " 行数据时发生错误: " + e.getMessage());
+                }
+            }
+            System.out.println("数据导入完成！");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
+
+    private double getNumericCellValue(Cell cell) {
+        if (cell == null) return 0.0;
+        if (cell.getCellType() == CellType.NUMERIC) {
+            return cell.getNumericCellValue();
+        }
+        try {
+            return Double.parseDouble(cell.getStringCellValue());
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
+    }
+
+    private String getStringCellValue(Cell cell) {
+        if (cell == null) return "";
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                return new BigDecimal(cell.getNumericCellValue()).toPlainString();
+            default:
+                return "";
+        }
+    }
+
+    private String normalizeClassCode(String rawCode) {
+        if (rawCode == null) return "";
+        return rawCode.replaceAll("[A-Z]$", ""); // 去掉末尾的单个大写字母
     }
 }

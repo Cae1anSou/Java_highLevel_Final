@@ -8,7 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class CourseDAO extends BaseDAO {
-    public void insetIfNotExist(Course course) {
+    public void insertIfNotExist(Course course) {
         if (!exist(course.getCode())) {
             insert(course);
         }
@@ -18,6 +18,7 @@ public class CourseDAO extends BaseDAO {
         String sql = "select * from courses where course_code = ?";
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
+
             ps.setString(1, code);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();

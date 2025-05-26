@@ -17,6 +17,7 @@ public class TimeSlot {
     private final Set<Integer> weeks; // 包含所有上课周数的集合
 
     private static final Map<String, Integer> DAY_MAP = new HashMap<>();
+
     static {
         DAY_MAP.put("一", 1);
         DAY_MAP.put("二", 2);
@@ -47,30 +48,43 @@ public class TimeSlot {
         }
     }
 
-    private Set<Integer> parseWeeks(String weekSpecifier) {
-        Set<Integer> parsedWeeks = new HashSet<>();
-        Matcher weekMatcher = WEEK_PATTERN.matcher(weekSpecifier);
+private Set<Integer> parseWeeks(String weekSpecifier) {
+    // 确保在所有操作之前清理字符串
+    weekSpecifier = weekSpecifier.trim().replaceAll("\\p{C}", ""); // 强力清理
 
-        if (weekMatcher.find()) {
-            int startWeek = Integer.parseInt(weekMatcher.group(1));
-            int endWeek = Integer.parseInt(weekMatcher.group(2));
-            String type = weekMatcher.group(3); // "单", "双" 或 null
+    Set<Integer> parsedWeeks = new HashSet<>();
+    // 注意：这里我将你的 WEEK_PATTERN 中的 \\d+ 改回了 \d+
+    // 在Java字符串中定义正则表达式时，单个反斜杠 \ 就够了，除非你想匹配字面上的反斜杠本身。
+    // Pattern.compile("(\\d+)(?:-(\\d+))?周(?:[(（]([单双])[)）])?") 是正确的。
+    // 你之前代码中的 private static final Pattern WEEK_PATTERN = Pattern.compile("(\\\\d+)(?:-(\\\\d+))?周(?:[(（]([单双])[)）])?");
+    // 这里的 \\\\d+ 会匹配字面上的 \d+ 而不是数字，这很可能是导致匹配失败的真正原因！
+    Pattern currentWeekPattern = Pattern.compile("(\\d+)(?:-(\\d+))?周(?:[(（]([单双])[)）])?");
+    Matcher weekMatcher = currentWeekPattern.matcher(weekSpecifier);
 
-            for (int i = startWeek; i <= endWeek; i++) {
-                if (type == null) {
-                    parsedWeeks.add(i);
-                } else if ("单".equals(type) && i % 2 != 0) {
-                    parsedWeeks.add(i);
-                } else if ("双".equals(type) && i % 2 == 0) {
-                    parsedWeeks.add(i);
-                }
+    if (weekMatcher.find()) {
+        int startWeek = Integer.parseInt(weekMatcher.group(1));
+        // 【关键修正】正确处理可选的 group(2)
+        int endWeek = (weekMatcher.group(2) != null) ? Integer.parseInt(weekMatcher.group(2)) : startWeek;
+        String type = weekMatcher.group(3); // "单", "双" 或 null
+
+        for (int i = startWeek; i <= endWeek; i++) {
+            if (type == null) {
+                parsedWeeks.add(i);
+            } else if ("单".equals(type) && i % 2 != 0) {
+                parsedWeeks.add(i);
+            } else if ("双".equals(type) && i % 2 == 0) {
+                parsedWeeks.add(i);
             }
-        } else {
-             // TODO： 可能需要加入其他的课程组合
-             System.err.println("警告: 遇到未知的周数格式: " + weekSpecifier);
         }
-        return parsedWeeks;
+    } else {
+        System.err.println("警告: 遇到无法解析的周数格式。");
+        System.err.println("   - 清理后的字符串: [" + weekSpecifier + "]");
+        System.err.println("   - 长度: " + weekSpecifier.length());
+        System.err.println("   - 使用的正则: " + currentWeekPattern.pattern());
+        System.err.println("   - 原始完整时间: " + this.originalTimeString);
     }
+    return parsedWeeks;
+}
 
     public boolean conflictsWith(TimeSlot other) {
         if (this.dayOfWeek != other.dayOfWeek) {
@@ -83,11 +97,25 @@ public class TimeSlot {
         return !Collections.disjoint(this.weeks, other.weeks);
     }
 
-    public int getDayOfWeek() { return dayOfWeek; }
-    public int getStartPeriod() { return startPeriod; }
-    public int getEndPeriod() { return endPeriod; }
-    public Set<Integer> getWeeks() { return weeks; }
-    public String getOriginalTimeString() { return originalTimeString; }
+    public int getDayOfWeek() {
+        return dayOfWeek;
+    }
+
+    public int getStartPeriod() {
+        return startPeriod;
+    }
+
+    public int getEndPeriod() {
+        return endPeriod;
+    }
+
+    public Set<Integer> getWeeks() {
+        return weeks;
+    }
+
+    public String getOriginalTimeString() {
+        return originalTimeString;
+    }
 
     @Override
     public String toString() {

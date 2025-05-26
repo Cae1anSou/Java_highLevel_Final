@@ -4,7 +4,6 @@ import cxz.Final_Project.model.RatedSolution;
 import cxz.Final_Project.model.SchedulableCourse;
 import cxz.Final_Project.service.CoursePlanner;
 import cxz.Final_Project.service.CreditSatisfactionScorer;
-import cxz.Final_Project.service.DataImporter;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,8 +15,8 @@ public class Main {
 
         // --- 步骤一 (可选，首次运行时执行): 导入数据 ---
         // 确保你的数据库是空的，或者你想更新数据时，再取消这部分代码的注释
-        DataImporter dataImporter = new DataImporter();
-        dataImporter.importFromXLSX("src/main/java/cxz/Final_Project/2024-2025学年第二学期全校总课表20250219.xlsx"); // <<--- 替换成你的XLSX文件实际路径
+//        DataImporter dataImporter = new DataImporter();
+//        dataImporter.importFromXLSX("src/main/java/cxz/Final_Project/2024-2025学年第二学期全校总课表20250219.xlsx"); // <<--- 替换成你的XLSX文件实际路径
 //        dataImporter.importFromXLSX("src/main/java/cxz/Final_Project/附件2：2024-2025学年第一学期通识选修课开课情况（含模块信息）20240605.xlsx"); // <<--- 替换成你的XLSX文件实际路径
 
         // --- 步骤二: 模拟用户输入，测试排课算法 ---
@@ -27,7 +26,7 @@ public class Main {
         CoursePlanner planner = new CoursePlanner();
 
         // 2. 模拟用户输入的学期和学分要求
-        String targetSemester = "(2024-2025-1)"; // <<--- 设置你要规划的学期
+        String targetSemester = "(2024-2025-2)"; // <<--- 设置你要规划的学期
         Map<String, Double> requirements = new HashMap<>();
         requirements.put("经管社科基础素养（创新创业）", 4.0);
         // requirements.put("专业核心课", 3.0); // 你可以根据需要添加更多模块要求

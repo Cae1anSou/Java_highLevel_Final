@@ -29,7 +29,7 @@ public class TimeSlot {
 
     // 星期三第6-7节{2-16周(双)}
     private static final Pattern TIME_PATTERN = Pattern.compile("星期([一二三四五六日])第(\\d+)(?:-(\\d+))?节\\{(.+?)\\}");
-    private static final Pattern WEEK_PATTERN = Pattern.compile("(\\d+)-(\\d+)周(?:[(（]([单双])[)）])?");
+    private static final Pattern WEEK_PATTERN = Pattern.compile("(\\\\d+)(?:-(\\\\d+))?周(?:[(（]([单双])[)）])?");
 
     public TimeSlot(String timeString) {
         this.originalTimeString = timeString;

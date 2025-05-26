@@ -5,6 +5,7 @@ public class Course {
     private String name;
     private double credits;
     private int moduleId;
+    private int propertyId;
 
     // TODO: 构造
 
@@ -38,6 +39,14 @@ public class Course {
 
     public void setModuleId(int id) {
         this.moduleId = id;
+    }
+
+    public int getPropertyId() {
+        return this.propertyId;
+    }
+
+    public void setPropertyId(int id) {
+        this.propertyId = id;
     }
 
     @Override

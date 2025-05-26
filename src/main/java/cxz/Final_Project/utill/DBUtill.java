@@ -3,7 +3,7 @@ package cxz.Final_Project.utill;
 import java.sql.*;
 
 public class DBUtill {
-    private static final String url = "jdbc:mysql://172.30.236.185:3306/course?useSSL=false&serverTimezone=GMT&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true";
+    private static final String url = "jdbc:mysql://172.30.236.185:3306/DF?useSSL=false&serverTimezone=GMT&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true";
     private static final String user = "caelan";
     private static final String psw = "Silvis0852";
 

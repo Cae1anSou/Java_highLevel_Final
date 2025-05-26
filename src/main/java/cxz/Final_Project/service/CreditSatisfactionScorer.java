@@ -1,6 +1,7 @@
 package cxz.Final_Project.service;
 
 import cxz.Final_Project.model.SchedulableCourse;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -10,21 +11,19 @@ public class CreditSatisfactionScorer implements SolutionScorer {
     private static final double EXCESS_PENALTY_WEIGHT = 0.5;   // 超出学分的扣分权重
 
     @Override
-    public double score(List<SchedulableCourse> solution, Map<String, Double> originalRequirements) {
+    public double score(List<SchedulableCourse> solution, Map<String, Double> require) {
         double totalScore = 0;
 
-        // 1. 按模块对已选课程的学分进行分组求和
-        Map<String, Double> actualCreditsPerModule = solution.stream()
+        Map<String, Double> preModule = solution.stream()
                 .collect(Collectors.groupingBy(
-                        SchedulableCourse::getModuleName,
-                        Collectors.summingDouble(SchedulableCourse::getCredits)
+                        course -> course.getModuleName(),
+                        Collectors.summingDouble(course -> course.getCredits())
                 ));
 
-        // 2. 遍历所有原始需求，计算得分
-        for (Map.Entry<String, Double> entry : originalRequirements.entrySet()) {
-            String moduleName = entry.getKey();
-            double required = entry.getValue();
-            double actual = actualCreditsPerModule.getOrDefault(moduleName, 0.0);
+        for (Map.Entry<String, Double> pair : require.entrySet()) {
+            String moduleName = pair.getKey();
+            double required = pair.getValue();
+            double actual = preModule.getOrDefault(moduleName, 0.0);
 
             if (actual >= required) {
                 double excess = actual - required;

@@ -2,7 +2,7 @@ package cxz.Final_Project.dao;
 
 import java.sql.*;
 
-public class ModuleDAO extends BaseDAO{
+public class ModuleDAO extends BaseDAO {
     // TODO: 构造
 
     public int findOrInsert(String name) {
@@ -18,31 +18,31 @@ public class ModuleDAO extends BaseDAO{
             } else {
                 return insertModule(name, con);
             }
-        } catch (SQLException e) {
+        } catch(SQLException e) {
             System.err.println("findOrInsertModule中发生错误");
             e.printStackTrace();
-            return -1;
+        return -1;
+    }
+}
+
+private int insertModule(String name, Connection con) throws SQLException {
+    String sql = "insert into modules (module_name) values (?)";
+
+    try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        ps.setString(1, name);
+        int lines = ps.executeUpdate();
+
+        if (lines == 0) {
+            throw new SQLException("插入模块失效，插入失败");
+        }
+
+        try (ResultSet rs = ps.getGeneratedKeys()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            } else {
+                throw new SQLException("插入模块失效，无法获取生成的ID");
+            }
         }
     }
-
-    private int insertModule(String name, Connection con) throws SQLException {
-        String sql = "insert into modules (module_name) values (?)";
-
-        try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, name);
-            int lines = ps.executeUpdate();
-
-            if (lines == 0) {
-                throw new SQLException("插入模块失效，插入失败");
-            }
-
-            try (ResultSet rs = ps.getGeneratedKeys()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                } else {
-                    throw new SQLException("插入模块失效，无法获取生成的ID");
-                }
-            }
-        }
-    }
+}
 }

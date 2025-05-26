@@ -25,6 +25,7 @@ public class DataImporter {
     private final CourseDAO courseDAO;
     private final CourseOfferingDAO courseOfferingDAO;
     private final CourseTimeDAO courseTimeDAO;
+    private final CoursePropertyDAO coursePropertyDAO;
 
     public DataImporter() {
         this.moduleDAO = new ModuleDAO();
@@ -32,6 +33,7 @@ public class DataImporter {
         this.courseDAO = new CourseDAO();
         this.courseOfferingDAO = new CourseOfferingDAO();
         this.courseTimeDAO = new CourseTimeDAO();
+        this.coursePropertyDAO = new CoursePropertyDAO();
     }
 
     public void importFromXLSX(String filePath) {
@@ -53,7 +55,7 @@ public class DataImporter {
             }
 
             List<String> requiredHeaders = Arrays.asList(
-                    "课程代码", "课程名称", "教学班", "学分",
+                    "课程号", "课程名称", "教学班名称", "学分", "课程性质",
                     "任课教师", "上课时间", "课程归属", "开课学院"
             );
 
@@ -77,19 +79,18 @@ public class DataImporter {
 
                 try {
                     // 3. 【核心步骤】通过列名从Map中获取索引，再获取数据
-                    String courseCode = getStringCellValue(row.getCell(headerMap.get("课程代码")));
+                    String courseCode = getStringCellValue(row.getCell(headerMap.get("课程号")));
                     String courseName = getStringCellValue(row.getCell(headerMap.get("课程名称")));
-                    String rawClassCode = getStringCellValue(row.getCell(headerMap.get("教学班")));
+                    String rawClassCode = getStringCellValue(row.getCell(headerMap.get("教学班名称")));
                     double credits = getNumericCellValue(row.getCell(headerMap.get("学分")));
                     String teacherName = getStringCellValue(row.getCell(headerMap.get("任课教师")));
                     String timeString = getStringCellValue(row.getCell(headerMap.get("上课时间")));
                     String moduleName = getStringCellValue(row.getCell(headerMap.get("课程归属")));
                     String college = getStringCellValue(row.getCell(headerMap.get("开课学院")));
+                    String property = getStringCellValue(row.getCell(headerMap.get("课程性质")));
 
-                    // 【核心修正】从教学班号派生出学期 semester
                     String semester = parseSemesterFromTeachingClassCode(rawClassCode);
 
-                    // 如果教学班号或课程代码为空，则跳过此行，因为它们是关键ID
                     if (rawClassCode.isEmpty() || courseCode.isEmpty()) {
                         System.err.println("警告：第 " + (i + 1) + " 行缺少关键信息（课程代码或教学班），已跳过。");
                         continue;
@@ -97,12 +98,14 @@ public class DataImporter {
 
                     int moduleId = moduleDAO.findOrInsert(moduleName);
                     int teacherId = teacherDAO.findOrInsert(teacherName, college);
+                    int propertyId = coursePropertyDAO.findOrInsert(property);
 
                     Course course = new Course();
                     course.setCode(courseCode);
                     course.setName(courseName);
                     course.setCredits(credits);
                     course.setModuleId(moduleId);
+                    course.setPropertyId(propertyId);
                     courseDAO.insertIfNotExist(course);
 
                     String baseClassCode = normalizeClassCode(rawClassCode);

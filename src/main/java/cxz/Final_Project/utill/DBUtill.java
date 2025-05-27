@@ -71,9 +71,7 @@ public class DBUtill {
         try { if (conn != null) conn.close(); } catch (SQLException e) { e.printStackTrace(); }
     }
 
-    /**
-     * 在应用程序关闭时，调用此方法来优雅地关闭连接池。
-     */
+
     public static void shutdown() {
         if (dataSource != null) {
             dataSource.close();

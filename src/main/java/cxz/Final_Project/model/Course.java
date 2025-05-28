@@ -3,7 +3,7 @@ package cxz.Final_Project.model;
 public class Course {
     private String code;
     private String name;
-    private double credits;
+    private double credit;
     private int moduleId;
     private int propertyId;
 
@@ -25,12 +25,12 @@ public class Course {
         this.name = name;
     }
 
-    public double getCredits() {
-        return credits;
+    public double getCredit() {
+        return this.credit;
     }
 
-    public void setCredits(double c) {
-        this.credits = c;
+    public void setCredit(double c) {
+        this.credit = c;
     }
 
     public int getModuleId() {
@@ -51,6 +51,6 @@ public class Course {
 
     @Override
     public String toString() {
-        return String.format("Course{courseCode=%s, name=%s, credits=&d}", code, name, credits);
+        return String.format("Course{courseCode=%s, name=%s, credit=&d}", code, name, credit);
     }
 }

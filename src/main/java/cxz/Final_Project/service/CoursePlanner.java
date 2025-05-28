@@ -17,7 +17,7 @@ public class CoursePlanner {
     }
 
     public List<RatedSolution> plan(String semester, Map<String, Double> required, SolutionScorer scorer) {
-        this.allCourses = courseOfferingDAO.getSchedulableCoursesBySemester(semester);
+        this.allCourses = courseOfferingDAO.getSchedulableCourses(semester);
 
         List<List<SchedulableCourse>> allFoundSolutions = new ArrayList<>();
         Map<String, Double> curCredit = new HashMap<>(required);
@@ -37,39 +37,46 @@ public class CoursePlanner {
         return ratedSolutions;
     }
 
+    // cxz.Final_Project.service.CoursePlanner.java
     private void dfs(List<SchedulableCourse> currentCombination,
-                     Map<String, Double> required,
-                     BitSet Bitmask,
+                     Map<String, Double> required, // 实际需求，会被修改
+                     BitSet Bitmask,             // 当前时间占用图，会被修改
                      int startIndex,
                      List<List<SchedulableCourse>> allSolutions) {
 
-        if (isGoalMet(required)) {
-            allSolutions.add(new ArrayList<>(currentCombination));
-            return;
-        }
+        // 【新的保存策略】当探索到某个叶子节点（无法再加课，或者所有课都试过）
+        // 或者，在尝试所有从 startIndex 开始的课程后，都应该将当前的 currentCombination 视为一个候选解
+        // 但为了避免在中间步骤保存不完整的解，我们主要在 startIndex 到达末尾时保存。
+        // 并且，为了收集所有可能的组合（包括不满足学分的），在每次尝试添加课程后，
+        // 无论是否满足 isGoalMet，都继续向下探索。
 
-        if (startIndex >= allCourses.size()) {
-             if (allSolutions.isEmpty()) {
-                 allSolutions.add(new ArrayList<>(currentCombination));
-             }
-            return;
-        }
-
-        for (int i = startIndex; i < allCourses.size(); i++) {
-            SchedulableCourse cur = allCourses.get(i);
-
-            if (isValidChoice(cur, Bitmask, required)) {
-
-                currentCombination.add(cur);
-                required.computeIfPresent(cur.getModuleName(), (k, v) -> v - cur.getCredits());
-                markSchedule(Bitmask, cur, true); // 在位图中标记占用的时间
-
-                dfs(currentCombination, required, Bitmask, i + 1, allSolutions);
-
-                markSchedule(Bitmask, cur, false); // 在位图中释放占用的时间
-                required.computeIfPresent(cur.getModuleName(), (k, v) -> v + cur.getCredits());
-                currentCombination.remove(currentCombination.size() - 1);
+        if (startIndex == allCourses.size()) {
+            // 所有课程都已考虑完毕，将当前组合（如果非空）作为一个候选解
+            if (!currentCombination.isEmpty()) {
+                allSolutions.add(new ArrayList<>(currentCombination));
             }
+            return;
+        }
+
+        // 决策1：不选择 allCourses.get(startIndex) 这门课
+        dfs(currentCombination, required, Bitmask, startIndex + 1, allSolutions);
+
+        // 决策2：尝试选择 allCourses.get(startIndex) 这门课
+        SchedulableCourse candidate = allCourses.get(startIndex);
+        if (isValidChoice(candidate, Bitmask, required)) { // isValidChoice 只检查时间冲突和模块是否需要
+            currentCombination.add(candidate);
+            markSchedule(Bitmask, candidate, true);
+            // 更新学分需求 (直接在共享的 'required' map 上操作)
+            // 注意：这种直接修改共享状态的方式，在回溯时必须精确恢复
+            double originalCreditsForModule = required.getOrDefault(candidate.getModuleName(), 0.0);
+            required.computeIfPresent(candidate.getModuleName(), (k, v) -> v - candidate.getCredit());
+
+            dfs(currentCombination, required, Bitmask, startIndex + 1, allSolutions);
+
+            // 回溯
+            required.put(candidate.getModuleName(), originalCreditsForModule); // 精确恢复学分
+            markSchedule(Bitmask, candidate, false);
+            currentCombination.remove(currentCombination.size() - 1);
         }
     }
 

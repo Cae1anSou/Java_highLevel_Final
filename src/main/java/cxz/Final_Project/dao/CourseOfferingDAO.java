@@ -55,14 +55,15 @@ public class CourseOfferingDAO extends BaseDAO {
 
     private static Pattern CTP = Pattern.compile("^(星期[一二三四五六日])第([\\d,-]+)节(\\{.+?\\})$");
 
-    public List<SchedulableCourse> getSchedulableCoursesBySemester(String semester) {
+    public List<SchedulableCourse> getSchedulableCourses(String semester) {
         List<SchedulableCourse> courses = new ArrayList<>();
-        String sql = "SELECT c.course_code, c.name AS course_name, c.credits, m.module_name, " +
+        String sql = "SELECT c.course_code, c.name AS course_name, c.credits, m.module_name, t.name AS teacher_name, " +
                 "GROUP_CONCAT(DISTINCT ct.time_string SEPARATOR '|||') AS all_time_segment " +
                 "FROM course_offerings AS co " +
                 "JOIN courses AS c ON co.course_code = c.course_code " +
                 "JOIN modules AS m ON c.module_id = m.module_id " + // 使用LEFT JOIN确保即使没有module_id的课程也能被包含
                 "JOIN course_times AS ct ON co.teaching_class_code = ct.teaching_class_code " +
+                "JOIN teachers AS t ON co.teacher_id = t.teacher_id " +
                 "WHERE co.semester = ? " +
                 "GROUP BY co.teaching_class_code, c.course_code, c.name, c.credits, m.module_name";
 
@@ -75,10 +76,11 @@ public class CourseOfferingDAO extends BaseDAO {
                     String courseCode = rs.getString("course_code");
                     String courseName = rs.getString("course_name");
                     String moduleName = rs.getString("module_name"); // 如果module_id为NULL，这里会是NULL
+                    String teacherName = rs.getString("teacher_name");
                     if (moduleName == null) {
                         moduleName = "未指定模块";
                     }
-                    double credits = rs.getDouble("credits");
+                    double credit = rs.getDouble("credits");
                     String allTimeSegment = rs.getString("all_time_segment");
 
                     List<TimeSlot> allTimes = new ArrayList<>();
@@ -117,7 +119,7 @@ public class CourseOfferingDAO extends BaseDAO {
                             }
                         }
                     }
-                    courses.add(new SchedulableCourse(courseCode, courseName, moduleName, credits, allTimes));
+                    courses.add(new SchedulableCourse(courseCode, courseName, moduleName, credit, allTimes, teacherName));
                 }
             }
         } catch (SQLException e) {
@@ -125,5 +127,21 @@ public class CourseOfferingDAO extends BaseDAO {
             e.printStackTrace();
         }
         return courses;
+    }
+
+        public List<String> findDistinctSemesters() {
+        List<String> semesters = new ArrayList<>();
+        String sql = "SELECT DISTINCT semester FROM course_offerings ORDER BY semester DESC";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                semesters.add(rs.getString("semester"));
+            }
+        } catch (SQLException e) {
+            System.err.println("查询所有学期失败: " + e.getMessage());
+            // 在实际应用中，这里应该使用日志框架记录错误
+        }
+        return semesters;
     }
 }

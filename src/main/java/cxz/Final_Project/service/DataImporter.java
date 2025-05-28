@@ -103,7 +103,7 @@ public class DataImporter {
                     Course course = new Course();
                     course.setCode(courseCode);
                     course.setName(courseName);
-                    course.setCredits(credits);
+                    course.setCredit(credits);
                     course.setModuleId(moduleId);
                     course.setPropertyId(propertyId);
                     courseDAO.insertIfNotExist(course);

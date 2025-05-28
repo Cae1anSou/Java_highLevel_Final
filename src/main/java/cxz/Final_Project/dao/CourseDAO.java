@@ -37,7 +37,7 @@ public class CourseDAO extends BaseDAO {
 
             ps.setString(1, course.getCode());
             ps.setString(2, course.getName());
-            ps.setDouble(3, course.getCredits());
+            ps.setDouble(3, course.getCredit());
             ps.setInt(4, course.getModuleId());
 
             ps.executeUpdate();
@@ -53,7 +53,7 @@ public class CourseDAO extends BaseDAO {
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, course.getName());
-            ps.setDouble(2, course.getCredits());
+            ps.setDouble(2, course.getCredit());
 
             if (course.getModuleId() != 0 && course.getModuleId() != -1) {
                 ps.setInt(3, course.getModuleId());

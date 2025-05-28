@@ -17,7 +17,7 @@ public class CreditSatisfactionScorer implements SolutionScorer {
         Map<String, Double> preModule = solution.stream()
                 .collect(Collectors.groupingBy(
                         course -> course.getModuleName(),
-                        Collectors.summingDouble(course -> course.getCredits())
+                        Collectors.summingDouble(course -> course.getCredit())
                 ));
 
         for (Map.Entry<String, Double> pair : require.entrySet()) {
